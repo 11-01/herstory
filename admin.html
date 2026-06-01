@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理 - 女性历史网</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{min-height:100vh;background:#f4efe7;color:#3d3027;font-family:宋体, sans-serif;}
+        .page-box{max-width:1240px;margin:0 auto;padding:24px 20px;}
+        .topbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:24px;}
+        .topbar h1{font-size:28px;color:#7c5535;}
+        .topbar .actions{display:flex;gap:12px;}
+        .topbar button{padding:10px 18px;border:none;border-radius:10px;background:#9c6c46;color:#fff;cursor:pointer;transition:0.2s;}
+        .topbar button:hover{opacity:0.92;}
+        .card-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:30px;}
+        .card{background:#fff;padding:22px;border-radius:18px;box-shadow:0 16px 30px rgba(0,0,0,0.08);}
+        .card small{color:#9c7a62;}
+        .card strong{display:block;font-size:28px;color:#8a5a32;margin-top:12px;}
+        .panel{background:#fff;border-radius:18px;padding:22px;box-shadow:0 16px 30px rgba(0,0,0,0.06);margin-bottom:24px;}
+        .panel h2{font-size:22px;color:#7a5136;margin-bottom:18px;}
+        .panel .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+        .panel .form-box, .panel .list-box{background:#f9f3ec;padding:18px;border-radius:16px;}
+        .form-box .field{margin-bottom:14px;}
+        .field label{display:block;color:#7b5a43;font-size:14px;margin-bottom:8px;}
+        .field input, .field textarea{width:100%;padding:12px;border:1px solid #dcc5b2;border-radius:10px;background:#fff;font-size:14px;}
+        textarea{resize:vertical;min-height:130px;}
+        .form-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
+        .form-actions button{flex:1 1 140px;padding:12px 14px;border:none;border-radius:10px;background:#9c6c46;color:#fff;cursor:pointer;transition:0.2s;}
+        .form-actions button.cancel{background:#bd6b56;}
+        .form-actions button:hover{opacity:0.94;}
+        .tab-nav{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap;}
+        .tab-nav button{padding:10px 18px;border:1px solid #d4b79d;border-radius:14px;background:#fff;cursor:pointer;transition:0.2s;color:#6f5441;}
+        .tab-nav button.active{background:#9c6c46;color:#fff;border-color:#9c6c46;}
+        .tab-content{display:none;}
+        .tab-content.active{display:block;}
+        .list-item{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 12px;border-bottom:1px solid #e7d6c6;}
+        .list-item:last-child{border-bottom:none;}
+        .list-main{max-width:74%;}
+        .list-main strong{display:block;font-size:16px;color:#5c3f29;margin-bottom:6px;}
+        .list-meta{color:#8b7a6f;font-size:13px;line-height:1.6;}
+        .item-actions{display:flex;gap:10px;flex-wrap:wrap;}
+        .item-actions button{padding:8px 14px;border:none;border-radius:10px;background:#d7b89f;color:#4b2c16;cursor:pointer;transition:0.2s;}
+        .item-actions button.delete{background:#e08b7b;color:#fff;}
+        .item-actions button:hover{opacity:0.92;}
+        .empty{color:#9c7f6b;text-align:center;padding:24px 0;font-size:14px;}
+        .status-bar{padding:14px 16px;background:#fff2e8;color:#7a4f35;border:1px solid #e5c3b0;border-radius:14px;margin-bottom:20px;}
+        .status-bar strong{color:#7d5132;}
+        .hint{font-size:13px;color:#9c7d60;margin-top:8px;}
+        @media(max-width:960px){.panel .grid{grid-template-columns:1fr;}}
+    </style>
+    <script src="frontend/config.js"></script>
+</head>
+<body>
+    <div class="page-box">
+        <div class="topbar">
+            <div>
+                <h1>女性历史网后台管理</h1>
+                <div class="hint">数据登录认证 + 完整的添加 / 编辑 / 删除管理面板</div>
+            </div>
+            <div class="actions">
+                <button onclick="refreshAll()">刷新数据</button>
+                <button onclick="logout()">退出登录</button>
+            </div>
+        </div>
+
+        <div class="card-row">
+            <div class="card"><small>人物总数</small><strong id="countPeople">0</strong></div>
+            <div class="card"><small>文章总数</small><strong id="countArticles">0</strong></div>
+            <div class="card"><small>馆藏总数</small><strong id="countMuseum">0</strong></div>
+        </div>
+
+        <div class="status-bar">当前登录账户：<strong>管理员</strong>，请保护好后台访问权限。</div>
+
+        <div class="tab-nav">
+            <button class="active" data-tab="people">人物管理</button>
+            <button data-tab="articles">文章管理</button>
+            <button data-tab="museum">馆藏管理</button>
+        </div>
+
+        <div id="tab-people" class="tab-content active">
+            <div class="panel">
+                <h2>新增 / 编辑人物</h2>
+                <div class="grid">
+                    <div class="form-box">
+                        <div class="field"><label>人物姓名</label><input id="pName" type="text" placeholder="请输入人物姓名"></div>
+                        <div class="field"><label>人物标签</label><input id="pTag" type="text" placeholder="例如：唐代·女政治家"></div>
+                        <div class="field"><label>人物图片链接</label><input id="pImg" type="text" placeholder="可填写网络图片地址"></div>
+                        <div class="field"><label>简介</label><textarea id="pDesc" placeholder="一句话简介"></textarea></div>
+                        <div class="field"><label>详细生平</label><textarea id="pContent" placeholder="详细事迹与历史评价"></textarea></div>
+                        <div class="form-actions">
+                            <button onclick="savePerson()" id="personSaveBtn">提交保存</button>
+                            <button class="cancel" onclick="resetPersonForm()">取消编辑</button>
+                        </div>
+                    </div>
+                    <div class="list-box">
+                        <h2>人物列表</h2>
+                        <div id="peopleList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-articles" class="tab-content">
+            <div class="panel">
+                <h2>新增 / 编辑文章</h2>
+                <div class="grid">
+                    <div class="form-box">
+                        <div class="field"><label>文章标题</label><input id="aTitle" type="text" placeholder="请输入文章标题"></div>
+                        <div class="field"><label>发布时间 / 分类</label><input id="aInfo" type="text" placeholder="例如：2026-05-18 / 历史专栏"></div>
+                        <div class="field"><label>文章正文</label><textarea id="aContent" placeholder="请输入文章内容"></textarea></div>
+                        <div class="form-actions">
+                            <button onclick="saveArticle()" id="articleSaveBtn">提交发布</button>
+                            <button class="cancel" onclick="resetArticleForm()">取消编辑</button>
+                        </div>
+                    </div>
+                    <div class="list-box">
+                        <h2>文章列表</h2>
+                        <div id="articleList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-museum" class="tab-content">
+            <div class="panel">
+                <h2>新增 / 编辑馆藏</h2>
+                <div class="grid">
+                    <div class="form-box">
+                        <div class="field"><label>展品名称</label><input id="mTitle" type="text" placeholder="请输入展品名称"></div>
+                        <div class="field"><label>展品图片链接</label><input id="mImg" type="text" placeholder="请输入图片链接"></div>
+                        <div class="form-actions">
+                            <button onclick="saveMuseum()" id="museumSaveBtn">提交保存</button>
+                            <button class="cancel" onclick="resetMuseumForm()">取消编辑</button>
+                        </div>
+                    </div>
+                    <div class="list-box">
+                        <h2>馆藏列表</h2>
+                        <div id="museumList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+const API_BASE = window.API_BASE;
+const ADMIN_API = window.ADMIN_API || `${API_BASE}/api/admin`;
+let editPersonId = null;
+let editArticleId = null;
+let editMuseumId = null;
+
+async function request(url, options = {}) {
+    options.credentials = 'include';
+    let resp = await fetch(url, options);
+    let data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+        throw new Error(data.error || '后台接口错误');
+    }
+    return data;
+}
+
+async function checkAuth() {
+    let resp = await fetch(`${API_BASE}/api/auth/status`, {credentials:'include'});
+    if (!resp.ok) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    let data = await resp.json();
+    if (!data.logged_in) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+async function refreshAll() {
+    await Promise.all([renderPeople(), renderArticles(), renderMuseum()]);
+    updateCounts();
+}
+
+function updateCounts() {
+    document.getElementById('countPeople').innerText = document.querySelectorAll('#peopleList .list-item').length;
+    document.getElementById('countArticles').innerText = document.querySelectorAll('#articleList .list-item').length;
+    document.getElementById('countMuseum').innerText = document.querySelectorAll('#museumList .list-item').length;
+}
+
+async function renderPeople() {
+    let arr = await request(`${ADMIN_API}/people`);
+    let html = arr.map(item => `
+        <div class="list-item">
+            <div class="list-main">
+                <strong>${item.name}</strong>
+                <div class="list-meta">${item.tag || '无标签'} · ${item.description || '无简介'}</div>
+            </div>
+            <div class="item-actions">
+                <button onclick="editPerson(${item.id})">编辑</button>
+                <button class="delete" onclick="deletePerson(${item.id})">删除</button>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('peopleList').innerHTML = html || '<div class="empty">暂无人物数据</div>';
+}
+
+async function renderArticles() {
+    let arr = await request(`${ADMIN_API}/articles`);
+    let html = arr.map(item => `
+        <div class="list-item">
+            <div class="list-main">
+                <strong>${item.title}</strong>
+                <div class="list-meta">${item.info || '无分类'} · ${item.content ? item.content.substring(0, 80) + '…' : '无内容'}</div>
+            </div>
+            <div class="item-actions">
+                <button onclick="editArticle(${item.id})">编辑</button>
+                <button class="delete" onclick="deleteArticle(${item.id})">删除</button>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('articleList').innerHTML = html || '<div class="empty">暂无文章数据</div>';
+}
+
+async function renderMuseum() {
+    let arr = await request(`${ADMIN_API}/museum`);
+    let html = arr.map(item => `
+        <div class="list-item">
+            <div class="list-main">
+                <strong>${item.title}</strong>
+                <div class="list-meta">${item.img || '无图片链接'}</div>
+            </div>
+            <div class="item-actions">
+                <button onclick="editMuseum(${item.id})">编辑</button>
+                <button class="delete" onclick="deleteMuseum(${item.id})">删除</button>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('museumList').innerHTML = html || '<div class="empty">暂无馆藏数据</div>';
+}
+
+async function savePerson() {
+    let name = document.getElementById('pName').value.trim();
+    let tag = document.getElementById('pTag').value.trim();
+    let img = document.getElementById('pImg').value.trim();
+    let description = document.getElementById('pDesc').value.trim();
+    let content = document.getElementById('pContent').value.trim();
+    if (!name) { alert('请填写人物姓名'); return; }
+    let url = `${ADMIN_API}/people`;
+    let method = 'POST';
+    if (editPersonId) {
+        url += `/${editPersonId}`;
+        method = 'PUT';
+    }
+    await request(url, {
+        method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, tag, img, description, content})
+    });
+    resetPersonForm();
+    await renderPeople();
+    updateCounts();
+    alert(editPersonId ? '人物已更新' : '人物已保存');
+}
+
+async function saveArticle() {
+    let title = document.getElementById('aTitle').value.trim();
+    let info = document.getElementById('aInfo').value.trim();
+    let content = document.getElementById('aContent').value.trim();
+    if (!title) { alert('请填写文章标题'); return; }
+    let url = `${ADMIN_API}/articles`;
+    let method = 'POST';
+    if (editArticleId) {
+        url += `/${editArticleId}`;
+        method = 'PUT';
+    }
+    await request(url, {
+        method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title, info, content})
+    });
+    resetArticleForm();
+    await renderArticles();
+    updateCounts();
+    alert(editArticleId ? '文章已更新' : '文章已发布');
+}
+
+async function saveMuseum() {
+    let title = document.getElementById('mTitle').value.trim();
+    let img = document.getElementById('mImg').value.trim();
+    if (!title) { alert('请填写展品名称'); return; }
+    let url = `${ADMIN_API}/museum`;
+    let method = 'POST';
+    if (editMuseumId) {
+        url += `/${editMuseumId}`;
+        method = 'PUT';
+    }
+    await request(url, {
+        method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title, img})
+    });
+    resetMuseumForm();
+    await renderMuseum();
+    updateCounts();
+    alert(editMuseumId ? '展品已更新' : '展品已保存');
+}
+
+async function editPerson(id) {
+    let item = await request(`${ADMIN_API}/people/${id}`);
+    editPersonId = id;
+    document.getElementById('pName').value = item.name;
+    document.getElementById('pTag').value = item.tag || '';
+    document.getElementById('pImg').value = item.img || '';
+    document.getElementById('pDesc').value = item.description || '';
+    document.getElementById('pContent').value = item.content || '';
+    document.getElementById('personSaveBtn').innerText = '保存更新';
+    openTab('people');
+}
+
+async function editArticle(id) {
+    let item = await request(`${ADMIN_API}/articles/${id}`);
+    editArticleId = id;
+    document.getElementById('aTitle').value = item.title;
+    document.getElementById('aInfo').value = item.info || '';
+    document.getElementById('aContent').value = item.content || '';
+    document.getElementById('articleSaveBtn').innerText = '保存更新';
+    openTab('articles');
+}
+
+async function editMuseum(id) {
+    let item = await request(`${ADMIN_API}/museum/${id}`);
+    editMuseumId = id;
+    document.getElementById('mTitle').value = item.title;
+    document.getElementById('mImg').value = item.img || '';
+    document.getElementById('museumSaveBtn').innerText = '保存更新';
+    openTab('museum');
+}
+
+async function deletePerson(id) {
+    if (!confirm('确认删除该人物？')) return;
+    await request(`${ADMIN_API}/people/${id}`, {method:'DELETE'});
+    await renderPeople();
+    updateCounts();
+}
+
+async function deleteArticle(id) {
+    if (!confirm('确认删除该文章？')) return;
+    await request(`${ADMIN_API}/articles/${id}`, {method:'DELETE'});
+    await renderArticles();
+    updateCounts();
+}
+
+async function deleteMuseum(id) {
+    if (!confirm('确认删除该展品？')) return;
+    await request(`${ADMIN_API}/museum/${id}`, {method:'DELETE'});
+    await renderMuseum();
+    updateCounts();
+}
+
+function resetPersonForm() {
+    editPersonId = null;
+    document.getElementById('pName').value = '';
+    document.getElementById('pTag').value = '';
+    document.getElementById('pImg').value = '';
+    document.getElementById('pDesc').value = '';
+    document.getElementById('pContent').value = '';
+    document.getElementById('personSaveBtn').innerText = '提交保存';
+}
+
+function resetArticleForm() {
+    editArticleId = null;
+    document.getElementById('aTitle').value = '';
+    document.getElementById('aInfo').value = '';
+    document.getElementById('aContent').value = '';
+    document.getElementById('articleSaveBtn').innerText = '提交发布';
+}
+
+function resetMuseumForm() {
+    editMuseumId = null;
+    document.getElementById('mTitle').value = '';
+    document.getElementById('mImg').value = '';
+    document.getElementById('museumSaveBtn').innerText = '提交保存';
+}
+
+function openTab(name) {
+    document.querySelectorAll('.tab-nav button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === name);
+    });
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.toggle('active', tab.id === `tab-${name}`);
+    });
+}
+
+function initTabs() {
+    document.querySelectorAll('.tab-nav button').forEach(btn => {
+        btn.addEventListener('click', () => openTab(btn.dataset.tab));
+    });
+}
+
+async function logout() {
+    await request(`${API_BASE}/api/auth/logout`, {method:'POST'});
+    window.location.href = 'login.html';
+}
+
+window.onload = async () => {
+    try {
+        await checkAuth();
+        initTabs();
+        await refreshAll();
+    } catch (e) {
+        window.location.href = 'login.html';
+    }
+};
+</script>
+</body>
+</html>

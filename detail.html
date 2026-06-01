@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人物详情</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="frontend/config.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">古今女性史</div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="article.html">历史文章</a>
+            <a href="museum.html">线上博物馆</a>
+        </div>
+    </nav>
+
+    <div class="detail-wrap">
+        <div class="detail-box">
+            <div class="detail-top">
+                <img class="detail-img" src="" alt="">
+                <div class="detail-text">
+                    <h2></h2>
+                    <div class="detail-time"></div>
+                    <a href="index.html" class="btn" style="margin-top:20px;">返回人物列表</a>
+                </div>
+            </div>
+            <div class="detail-content">
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>古今女性历史文化网站</p>
+    </footer>
+
+<script>
+function getUrlParam(name){
+    let reg = new RegExp("(^|&)"+name+"=([^&]*)(&|$)");
+    let r = window.location.search.substr(1).match(reg);
+    return r?decodeURIComponent(r[2]):null;
+}
+    const API_BASE = window.API_BASE || window.location.origin;
+async function loadDetail(){
+    let pid = getUrlParam("id");
+    let imgEl = document.querySelector(".detail-img");
+    let nameEl = document.querySelector(".detail-text h2");
+    let timeEl = document.querySelector(".detail-time");
+    let contentEl = document.querySelector(".detail-content");
+
+    if(!pid){
+        nameEl.innerText = "暂无资料";
+        contentEl.innerHTML = "<p>未传入人物ID</p>";
+        return;
+    }
+
+    try {
+        let resp = await fetch(`${API_BASE}/api/people/${pid}`);
+        if (!resp.ok) throw new Error('未找到人物');
+        let info = await resp.json();
+        imgEl.src = info.img || "https://picsum.photos/600/800";
+        nameEl.innerText = info.name || "暂无资料";
+        timeEl.innerText = info.tag || "";
+        contentEl.innerHTML = info.content || "<p>暂无详细生平介绍，请前往后台完善内容</p>";
+    } catch (error) {
+        imgEl.src = "https://picsum.photos/600/800";
+        nameEl.innerText = "暂无资料";
+        timeEl.innerText = "";
+        contentEl.innerHTML = "<p>加载失败，请前往后台检查是否已录入。</p>";
+        console.error(error);
+    }
+}
+window.onload = loadDetail;
+</script>
+</body>
+</html>

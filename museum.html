@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>女性历史博物馆</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="frontend/config.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">古今女性史</div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="article.html">历史文章</a>
+            <a href="museum.html">线上博物馆</a>
+        </div>
+    </nav>
+
+    <div class="container" style="padding-top:120px;">
+        <h2 class="section-title">线上女性历史博物馆</h2>
+        <div class="museum-box" id="museumBox">
+        </div>
+    </div>
+
+    <footer>
+        <a href="index.html">返回首页</a>
+    </footer>
+
+<script>
+async function loadMuseum(){
+    let box = document.getElementById("museumBox");
+    let html = "";
+    try {
+        let resp = await fetch(`${API_BASE}/api/museum`);
+        let arr = await resp.json();
+        arr.forEach(item=>{
+            html += `
+            <div class="museum-item">
+                <img src="${item.img || 'https://picsum.photos/600/400'}" alt="${item.title}">
+                <p>${item.title}</p>
+            </div>
+            `;
+        });
+        if(arr.length===0) html = "<p style='width:100%;text-align:center;color:#999;'>暂无展品录入</p>";
+    } catch (error) {
+        html = "<p style='width:100%;text-align:center;color:#999;'>加载失败，请稍后重试</p>";
+        console.error(error);
+    }
+    box.innerHTML = html;
+}
+window.onload = loadMuseum;
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史文章专栏</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="frontend/config.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">古今女性史</div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="article.html">历史文章</a>
+            <a href="museum.html">线上博物馆</a>
+        </div>
+    </nav>
+
+    <div class="container" style="padding-top:120px;">
+        <h2 class="section-title">女性历史文章专栏</h2>
+        <div class="article-list" id="articleBox">
+        </div>
+    </div>
+
+    <footer>
+        <a href="index.html">返回首页</a>
+        <p>历史人文专栏</p>
+    </footer>
+
+<script>
+async function loadArticle(){
+    let box = document.getElementById("articleBox");
+    let html = "";
+    try {
+        let resp = await fetch(`${API_BASE}/api/articles`);
+        let arr = await resp.json();
+        arr.forEach(item=>{
+            html += `
+            <a class="article-item" href="article_detail.html?id=${item.id}">
+                <h3>${item.title}</h3>
+                <div class="article-info">${item.info || '历史文章'}</div>
+                <p>${(item.content||'').substring(0,80)}……</p>
+            </a>
+            `;
+        });
+        if(arr.length===0) html = "<p style='text-align:center;color:#999;'>暂无文章，前往后台发布</p>";
+    } catch (error) {
+        html = "<p style='text-align:center;color:#999;'>加载失败，请稍后重试</p>";
+        console.error(error);
+    }
+    box.innerHTML = html;
+}
+window.onload = loadArticle;
+</script>
+</body>
+</html>

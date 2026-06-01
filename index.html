@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>千年风华 - 古今女性历史网</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="frontend/config.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            古今女性史
+        </div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="article.html">历史文章</a>
+            <a href="museum.html">线上博物馆</a>
+            <a href="admin.html">内容管理</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>千年风华 巾帼流芳</h1>
+        <p>梳理中外女性千年历程，收录历代传奇人物，传承东方女性文明</p>
+        <a href="#people" class="btn">开始阅览</a>
+    </section>
+
+    <div class="container" id="people">
+        <h2 class="section-title">杰出女性人物库</h2>
+        <div class="classify-tag" id="classifyTag">
+            <!-- 动态标签由后端数据生成 -->
+        </div>
+
+        <div class="people-grid" id="dynPeopleBox">
+            <!-- 本地数据自动渲染 -->
+        </div>
+    </div>
+
+    <footer>
+        <h3>古今中外女性历史文化网站</h3>
+        <div class="footer-link">
+            <a href="index.html">首页</a>
+            <a href="article.html">文章专栏</a>
+            <a href="museum.html">线上博物馆</a>
+            <a href="admin.html">后台录入</a>
+        </div>
+        <p>©2026 纯本地存储 · iPad Code App 专用</p>
+    </footer>
+
+<script>
+let peopleList = [];
+let selectedTag = '全部人物';
+
+async function loadHomePeople(){
+    const box = document.getElementById("dynPeopleBox");
+    box.innerHTML = '<p style="text-align:center;color:#999;">加载中…</p>';
+    try{
+        let resp = await fetch(`${API_BASE}/api/people`);
+        peopleList = await resp.json();
+        renderTags();
+        renderPeople();
+    }catch(err){
+        console.error(err);
+        box.innerHTML = "<p style='text-align:center;width:100%;font-size:16px;color:#999;'>加载失败，请稍后重试</p>";
+    }
+}
+
+function renderTags(){
+    const container = document.getElementById('classifyTag');
+    const tags = new Set();
+    peopleList.forEach(p=>{ if(p.tag && p.tag.trim()) tags.add(p.tag.trim()); });
+    let html = '';
+    html += `<span class="${selectedTag==='全部人物'?'active':''}" data-tag="">全部人物</span>`;
+    Array.from(tags).forEach(tag=>{
+        const active = (selectedTag === tag) ? 'active' : '';
+        html += `<span class="${active}" data-tag="${tag}">${tag}</span>`;
+    });
+    if(tags.size===0) html = `<span class="active" data-tag="">全部人物</span>`;
+    container.innerHTML = html;
+    container.querySelectorAll('span').forEach(el=>{
+        el.addEventListener('click', ()=>{
+            const tag = el.getAttribute('data-tag');
+            selectedTag = tag ? tag : '全部人物';
+            renderTags();
+            renderPeople();
+        });
+    });
+}
+
+function renderPeople(){
+    const box = document.getElementById('dynPeopleBox');
+    let list = peopleList.slice();
+    if(selectedTag !== '全部人物'){
+        list = list.filter(p=> (p.tag || '') === selectedTag);
+    }
+    let html = '';
+    list.forEach(item=>{
+        html += `
+        <div class="people-card">
+            <img src="${item.img||'https://picsum.photos/600/400'}" alt="${item.name}">
+            <div class="card-info">
+                <h3>${item.name}</h3>
+                <span class="card-tag">${item.tag||''}</span>
+                <p class="card-desc">${item.description||''}</p>
+                <a href="detail.html?id=${item.id}" class="btn" style="margin-top:10px;padding:8px 20px;font-size:14px;">查看详情</a>
+            </div>
+        </div>
+        `;
+    });
+    if(list.length===0){
+        html = "<p style='text-align:center;width:100%;font-size:16px;color:#999;'>暂无人物资料，请前往后台添加</p>";
+    }
+    box.innerHTML = html;
+}
+
+window.onload = loadHomePeople;
+</script>
+</body>
+</html>

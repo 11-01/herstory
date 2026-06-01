@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情 - 女性历史网</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="frontend/config.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">古今女性史</div>
+        <div class="nav-links">
+            <a href="index.html">首页</a>
+            <a href="article.html">历史文章</a>
+            <a href="museum.html">线上博物馆</a>
+        </div>
+    </nav>
+
+    <div class="container detail-wrap" style="padding-top:120px;">
+        <div class="detail-box">
+            <div class="detail-top" style="flex-direction:column;align-items:flex-start;">
+                <div class="detail-text" style="width:100%;">
+                    <h2 id="articleTitle">文章标题</h2>
+                    <div class="detail-time" id="articleInfo">发布时间 / 分类</div>
+                    <a href="article.html" class="btn" style="margin-top:20px;">返回文章列表</a>
+                    <button id="editToggle" class="btn" style="margin-top:20px;background:#c89e7b;display:none;">编辑文章</button>
+                </div>
+            </div>
+            <div class="detail-content" id="articleContent">
+                <p>正在加载文章内容，请稍候…</p>
+            </div>
+            <div class="detail-content" id="editPanel" style="display:none;margin-top:30px;background:#fbf6f0;padding:20px;border-radius:15px;">
+                <h3 style="color:#9c6c46;margin-bottom:16px;">编辑文章</h3>
+                <div style="margin-bottom:14px;"><input id="editTitle" type="text" placeholder="文章标题" style="width:100%;padding:12px;border:1px solid #d6c4b1;border-radius:10px;"></div>
+                <div style="margin-bottom:14px;"><input id="editInfo" type="text" placeholder="发布时间 / 分类" style="width:100%;padding:12px;border:1px solid #d6c4b1;border-radius:10px;"></div>
+                <div style="margin-bottom:12px;"><textarea id="editContent" rows="10" placeholder="文章正文" style="width:100%;padding:12px;border:1px solid #d6c4b1;border-radius:10px;resize:vertical;"></textarea></div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                    <button class="btn" onclick="saveArticle()">保存修改</button>
+                    <button class="btn" style="background:#dd6666;" onclick="cancelEdit()">取消</button>
+                </div>
+                <p id="editStatus" style="margin-top:12px;color:#b23e3e;"></p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>古今女性历史文化网站</p>
+    </footer>
+
+<script>
+function getUrlParam(name){
+    let reg = new RegExp('(^|&)' + name + '=([^&]*)(&|$)');
+    let r = window.location.search.substr(1).match(reg);
+    return r ? decodeURIComponent(r[2]) : null;
+}
+
+let articleId = getUrlParam('id');
+let articleData = null;
+
+const API_BASE = window.API_BASE;
+const ADMIN_API = window.ADMIN_API || `${API_BASE}/api/admin`;
+async function fetchArticle(){
+    const titleEl = document.getElementById('articleTitle');
+    const infoEl = document.getElementById('articleInfo');
+    const contentEl = document.getElementById('articleContent');
+    if(!articleId){
+        titleEl.innerText = '未指定文章 ID';
+        contentEl.innerHTML = '<p>无法加载文章，请返回文章列表。</p>';
+        return;
+    }
+    try{
+        let resp = await fetch(`${API_BASE}/api/articles/${articleId}`);
+        if(!resp.ok){
+            let err = await resp.json().catch(()=>({error:'无法加载文章'}));
+            titleEl.innerText = '文章加载失败';
+            contentEl.innerHTML = `<p>${err.error || '未知错误'}</p>`;
+            return;
+        }
+        articleData = await resp.json();
+        titleEl.innerText = articleData.title || '无标题';
+        infoEl.innerText = articleData.info || '';
+        contentEl.innerHTML = `<div style="white-space:pre-wrap;line-height:2em;font-size:16px;color:#5b4733;">${articleData.content || '暂无内容'}</div>`;
+        document.getElementById('editTitle').value = articleData.title || '';
+        document.getElementById('editInfo').value = articleData.info || '';
+        document.getElementById('editContent').value = articleData.content || '';
+    }catch(err){
+        console.error(err);
+        titleEl.innerText = '文章加载失败';
+        contentEl.innerHTML = '<p>网络错误，请稍后重试。</p>';
+    }
+}
+
+async function checkAdmin(){
+    try{
+        let resp = await fetch(`${API_BASE}/api/auth/status`, {credentials:'include'});
+        if(!resp.ok) return;
+        let data = await resp.json();
+        if(data.logged_in){
+            document.getElementById('editToggle').style.display = 'inline-block';
+        }
+    }catch(err){
+        console.error(err);
+    }
+}
+
+function toggleEdit(){
+    const panel = document.getElementById('editPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function cancelEdit(){
+    document.getElementById('editStatus').innerText = '';
+    document.getElementById('editPanel').style.display = 'none';
+}
+
+document.getElementById('editToggle').addEventListener('click', toggleEdit);
+
+async function saveArticle(){
+    let title = document.getElementById('editTitle').value.trim();
+    let info = document.getElementById('editInfo').value.trim();
+    let content = document.getElementById('editContent').value.trim();
+    let status = document.getElementById('editStatus');
+    status.innerText = '';
+    if(!title){
+        status.innerText = '标题不能为空。';
+        return;
+    }
+    try{
+        let resp = await fetch(`${ADMIN_API}/articles/${articleId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({title, info, content})
+        });
+        let result = await resp.json();
+        if(!resp.ok){
+            status.innerText = result.error || '更新失败';
+            return;
+        }
+        articleData = result;
+        document.getElementById('articleTitle').innerText = articleData.title;
+        document.getElementById('articleInfo').innerText = articleData.info || '';
+        document.getElementById('articleContent').innerHTML = `<div style="white-space:pre-wrap;line-height:2em;font-size:16px;color:#5b4733;">${articleData.content || '暂无内容'}</div>`;
+        status.innerText = '文章已保存。';
+    }catch(err){
+        console.error(err);
+        status.innerText = '网络错误，保存失败。';
+    }
+}
+
+window.onload = async () => {
+    await checkAdmin();
+    await fetchArticle();
+};
+</script>
+</body>
+</html>
